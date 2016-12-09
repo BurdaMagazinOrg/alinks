@@ -21,7 +21,6 @@ use Drupal\user\UserInterface;
  *   handlers = {
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "list_builder" = "Drupal\alinks\KeywordListBuilder",
- *     "views_data" = "Drupal\alinks\Entity\KeywordViewsData",
  *     "translation" = "Drupal\alinks\KeywordTranslationHandler",
  *     "form" = {
  *       "default" = "Drupal\alinks\Form\KeywordForm",
@@ -47,7 +46,6 @@ use Drupal\user\UserInterface;
  *     "status" = "status",
  *   },
  *   links = {
- *     "canonical" = "/admin/content/alinks/{alink_keyword}",
  *     "add-form" = "/admin/content/alinks/add",
  *     "edit-form" = "/admin/content/alinks/{alink_keyword}/edit",
  *     "delete-form" = "/admin/content/alinks/{alink_keyword}/delete",

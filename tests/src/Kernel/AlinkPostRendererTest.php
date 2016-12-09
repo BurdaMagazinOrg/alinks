@@ -21,14 +21,14 @@ class AlinkPostRendererTest extends KernelTestBase {
       Keyword::create([
         'name' => 'Foobar',
         'link' => [
-          'uri' => 'internal:/example'
-        ]
+          'uri' => 'internal:/example',
+        ],
       ]),
       Keyword::create([
         'name' => 'Katze',
         'link' => [
-          'uri' => 'internal:/cat'
-        ]
+          'uri' => 'internal:/cat',
+        ],
       ]),
     ];
 

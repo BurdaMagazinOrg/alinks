@@ -15,17 +15,6 @@ class KeywordForm extends ContentEntityForm {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
-    /* @var $entity \Drupal\alinks\Entity\Keyword */
-    $form = parent::buildForm($form, $form_state);
-    $entity = $this->entity;
-
-    return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function save(array $form, FormStateInterface $form_state) {
     $entity = $this->entity;
     $status = parent::save($form, $form_state);
@@ -42,7 +31,7 @@ class KeywordForm extends ContentEntityForm {
           '%label' => $entity->label(),
         ]));
     }
-    $form_state->setRedirect('entity.alink_keyword.canonical', ['alink_keyword' => $entity->id()]);
+    $form_state->setRedirect('entity.alink_keyword.collection');
   }
 
 }

@@ -4,8 +4,8 @@ namespace Drupal\alinks;
 
 use Drupal\alinks\Entity\Keyword;
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Url;
-use Wamania\Snowball\German;
 
 /**
  * Class AlinkPostRenderer.
@@ -29,9 +29,22 @@ class AlinkPostRenderer {
 
   protected $xpathSelector = "//text()[not(ancestor::a) and not(ancestor::script) and not(ancestor::*[@data-alink-ignore])]";
 
-  public function __construct($content, array $context = [], $xpathSelector = NULL) {
+  /**
+   * AlinkPostRenderer constructor.
+   * @param $content
+   * @param $context
+   * @param null $xpathSelector
+   */
+  public function __construct($content, $context, $xpathSelector = NULL) {
+
+    if (!empty($context['#entity_type']) && !empty($context['#' . $context['#entity_type']])) {
+      /** @var ContentEntityInterface $entity */
+      $entity = $context['#' . $context['#entity_type']];
+      $class = 'Wamania\Snowball\\' . $entity->language()->getName();
+      $this->stemmer = new $class();
+    }
+
     $this->content = $content;
-    $this->stemmer = new German();
     if ($xpathSelector) {
       $this->xpathSelector = $xpathSelector;
     }

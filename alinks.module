@@ -7,7 +7,6 @@
 
 use \Drupal\Core\Entity\EntityInterface;
 use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
-use \Drupal\alinks\AlinkPostRenderer;
 
 /**
  * Implements hook_theme().
@@ -30,9 +29,11 @@ function alinks_entity_view(array &$build, EntityInterface $entity, EntityViewDi
 
   $displays = Drupal::configFactory()->get('alinks.settings')->get('displays');
 
+  $replacer = \Drupal::service('alinks.replacer');
   foreach ($displays as $display) {
     if ($entity->getEntityTypeId() == $display['entity_type'] && $entity->bundle() == $display['entity_bundle'] && $view_mode == $display['entity_display']) {
-      $build['#post_render'][] = [AlinkPostRenderer::class, 'postRender'];
+
+      $build['#post_render'][] = [get_class($replacer), 'postRender'];
     }
   }
 }
