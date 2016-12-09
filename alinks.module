@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Contains alinks.module.
+ */
+
+use \Drupal\Core\Entity\EntityInterface;
+use \Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use \Drupal\alinks\AlinkPostRenderer;
+
+/**
+ * Implements hook_theme().
+ */
+function alinks_theme() {
+  $theme = [];
+
+  $theme['alink_keyword'] = array(
+    'render element' => 'elements',
+    'file' => 'alink_keyword.page.inc',
+    'template' => 'alink_keyword',
+  );
+  return $theme;
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function alinks_entity_view(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display, $view_mode) {
+
+  $displays = Drupal::configFactory()->get('alinks.settings')->get('displays');
+
+  foreach ($displays as $display) {
+    if ($entity->getEntityTypeId() == $display['entity_type'] && $entity->bundle() == $display['entity_bundle'] && $view_mode == $display['entity_display']) {
+      $build['#post_render'][] = [AlinkPostRenderer::class, 'postRender'];
+    }
+  }
+}
