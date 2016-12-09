@@ -4,8 +4,8 @@ namespace Drupal\alinks;
 
 use Drupal\alinks\Entity\Keyword;
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Url;
+use Wamania\Snowball\English;
 
 /**
  * Class AlinkPostRenderer.
@@ -35,13 +35,18 @@ class AlinkPostRenderer {
    * @param $context
    * @param null $xpathSelector
    */
-  public function __construct($content, $context, $xpathSelector = NULL) {
+  public function __construct($content, $context = NULL, $xpathSelector = NULL) {
 
     if (!empty($context['#entity_type']) && !empty($context['#' . $context['#entity_type']])) {
-      /** @var ContentEntityInterface $entity */
+      /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = $context['#' . $context['#entity_type']];
       $class = 'Wamania\Snowball\\' . $entity->language()->getName();
-      $this->stemmer = new $class();
+      if (class_exists($class)) {
+        $this->stemmer = new $class();
+      }
+      else {
+        $this->stemmer = new English();
+      }
     }
 
     $this->content = $content;
@@ -72,8 +77,8 @@ class AlinkPostRenderer {
   public function setKeywords($keywords) {
     $this->keywords = $keywords;
     foreach ($this->keywords as &$keyword) {
-       $keyword->stemmed_keyword = $this->stemmer->stem($keyword->getText());
-     }
+      $keyword->stemmed_keyword = $this->stemmer->stem($keyword->getText());
+    }
   }
 
   public function replace() {
@@ -137,7 +142,7 @@ class AlinkPostRenderer {
 
   protected function replaceFirst(Keyword $search, $replace, $subject, &$count = 0) {
     $search_escaped = preg_quote($search->getText(), '/');
-    $subject = preg_replace('/\b' . $search_escaped .'\b/u', $replace, $subject, 1, $count);
+    $subject = preg_replace('/\b' . $search_escaped . '\b/u', $replace, $subject, 1, $count);
     if ($count == 0) {
       // @TODO: Look at Search API Tokenizer & Highlighter
       $terms = str_replace(['.', ',', ';', '!', '?'], '', $subject);
@@ -153,7 +158,7 @@ class AlinkPostRenderer {
       foreach ($terms as $original_term => $term) {
         if ($term === $search->stemmed_keyword) {
           $search_escaped = preg_quote($original_term, '/');
-          $subject = preg_replace('/\b' . $search_escaped .'\b/u', '<a href="' . $search->getUrl() . '">' . $original_term . '</a>', $subject, 1, $count);
+          $subject = preg_replace('/\b' . $search_escaped . '\b/u', '<a href="' . $search->getUrl() . '">' . $original_term . '</a>', $subject, 1, $count);
         }
       }
     }
@@ -196,8 +201,7 @@ class AlinkPostRenderer {
       try {
         $uri = $this->normalizeUri($link->getAttribute('href'));
         $links[] = Url::fromUri($uri)->toString();
-      }
-      catch (\Exception $exception) {
+      } catch (\Exception $exception) {
         // Do nothing.
       }
     }
@@ -207,10 +211,10 @@ class AlinkPostRenderer {
   protected function addExistingLink(Keyword $word) {
     $this->existingLinks[$word->getUrl()] = TRUE;
     $this->keywords = array_filter($this->keywords, function ($keyword) use ($word) {
-      if ($keyword->getText() ==  $word->getText()) {
+      if ($keyword->getText() == $word->getText()) {
         return FALSE;
       }
-      if ($keyword->getUrl() ==  $word->getUrl()) {
+      if ($keyword->getUrl() == $word->getUrl()) {
         return FALSE;
       }
       return TRUE;

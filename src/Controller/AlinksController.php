@@ -15,10 +15,14 @@ use Symfony\Component\HttpFoundation\RequestStack;
  */
 class AlinksController extends ControllerBase {
 
-
   protected $requestStack;
 
-
+  /**
+   * AlinksController constructor.
+   *
+   * @param \Symfony\Component\HttpFoundation\RequestStack $requestStack
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $configFactory
+   */
   public function __construct(RequestStack $requestStack, ConfigFactoryInterface $configFactory) {
 
     $this->requestStack = $requestStack;
@@ -44,12 +48,14 @@ class AlinksController extends ControllerBase {
    */
   public function delete($id) {
 
-
-    $displays = $this->configFactory->getEditable('alinks.settings')->get('displays');
+    $displays = $this->configFactory->getEditable('alinks.settings')
+      ->get('displays');
 
     unset($displays[$id]);
 
-    $this->configFactory->getEditable('alinks.settings')->set('displays', $displays)->save();
+    $this->configFactory->getEditable('alinks.settings')
+      ->set('displays', $displays)
+      ->save();
 
     $previousUrl = $this->requestStack->getCurrentRequest()->server->get('HTTP_REFERER');
 

@@ -21,7 +21,7 @@ use Drupal\user\UserInterface;
  *   handlers = {
  *     "view_builder" = "Drupal\Core\Entity\EntityViewBuilder",
  *     "list_builder" = "Drupal\alinks\KeywordListBuilder",
- *     "translation" = "Drupal\alinks\KeywordTranslationHandler",
+ *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
  *     "form" = {
  *       "default" = "Drupal\alinks\Form\KeywordForm",
  *       "add" = "Drupal\alinks\Form\KeywordForm",
@@ -214,10 +214,22 @@ class Keyword extends ContentEntityBase implements KeywordInterface {
     return $fields;
   }
 
+  /**
+   * Returns the keyword text.
+   *
+   * @return string
+   *   The keyword.
+   */
   public function getText() {
     return $this->label();
   }
 
+  /**
+   * Returns url.
+   *
+   * @return string
+   *   The url.
+   */
   public function getUrl() {
     return $this->get('link')->first()->getUrl()->toString();
   }

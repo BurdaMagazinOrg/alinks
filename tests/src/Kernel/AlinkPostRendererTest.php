@@ -6,6 +6,9 @@ use Drupal\alinks\AlinkPostRenderer;
 use Drupal\alinks\Entity\Keyword;
 use Drupal\KernelTests\KernelTestBase;
 
+/**
+ * Class AlinkPostRendererTest.
+ */
 class AlinkPostRendererTest extends KernelTestBase {
 
   /**
