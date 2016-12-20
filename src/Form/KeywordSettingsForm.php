@@ -18,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @ingroup alinks
  */
-class KeywordSettingsForm extends ConfigFormBase  {
+class KeywordSettingsForm extends ConfigFormBase {
 
   protected $entityTypeManager;
 
@@ -61,20 +61,37 @@ class KeywordSettingsForm extends ConfigFormBase  {
   }
 
   /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  public function addDisplay(array &$form, FormStateInterface $form_state) {
+
+    if ($form_state->getValue('entityType') && $form_state->getValue('entityDisplay')) {
+      $displays = $this->configFactory()
+        ->getEditable('alinks.settings')
+        ->get('displays');
+
+
+      $displays[] = [
+        'entity_type' => $form_state->getValue('entityType'),
+        'entity_bundle' => $form_state->getValue('entityBundle'),
+        'entity_display' => $form_state->getValue('entityDisplay'),
+      ];
+
+      $this->configFactory()->getEditable('alinks.settings')
+        ->set('displays', $displays)
+        ->set('vocabularies', $form_state->getValue('vocabularies'))
+        ->save();
+    }
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
-    $displays = $this->configFactory()->getEditable('alinks.settings')->get('displays');
-
-    $displays[] = [
-      'entity_type' => $form_state->getValue('entityType'),
-      'entity_bundle' => $form_state->getValue('entityBundle'),
-      'entity_display' => $form_state->getValue('entityDisplay'),
-    ];
-
     $this->configFactory()->getEditable('alinks.settings')
-      ->set('displays', $displays)
+      ->set('vocabularies', array_filter($form_state->getValue('vocabularies')))
       ->save();
   }
 
@@ -85,10 +102,60 @@ class KeywordSettingsForm extends ConfigFormBase  {
 
     $form = parent::buildForm($form, $form_state);
 
-    $form['actions']['submit']['#value'] = $this->t('Add');
+    $form['display'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Configure the displays on which alinks should be used'),
+      '#open' => TRUE,
+    );
 
-    $form = $this->buildTable($form, $form_state);
+    $form['display'] += $this->buildTable($form_state);
 
+    $form['display'] += $this->buildAddNew($form_state);
+
+    $vocabularies = $this->configFactory()
+      ->getEditable('alinks.settings')
+      ->get('vocabularies');
+
+    $form['settings'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Replace taxonomy terms'),
+      '#open' => TRUE,
+    );
+
+    $form['settings']['vocabularies'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Vocabularies'),
+      '#default_value' => $vocabularies,
+    ];
+
+    $vocabularies = $this->entityTypeManager->getStorage('taxonomy_vocabulary')
+      ->loadMultiple();
+
+    foreach ($vocabularies as $vocabulary) {
+      $form['settings']['vocabularies']['#options'][$vocabulary->id()] = $vocabulary->label();
+    }
+
+    return $form;
+  }
+
+  /**
+   * Fills forms.
+   *
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   * @return mixed
+   */
+  public function populateEntitySettings(array &$form, FormStateInterface $form_state) {
+    return $form['display']['entity'];
+  }
+
+  /**
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   */
+  protected function buildAddNew(FormStateInterface $form_state) {
+
+    $form = [];
 
     $entityTypes = [];
     foreach ($this->entityTypeManager->getDefinitions() as $definition) {
@@ -108,12 +175,15 @@ class KeywordSettingsForm extends ConfigFormBase  {
         'callback' => array($this, 'populateEntitySettings'),
         'wrapper' => 'entity-wrapper',
       ],
+      '#group' => 'display',
     ];
 
     $form['entity'] = array(
       '#type' => 'container',
       '#prefix' => '<div id="entity-wrapper">',
       '#suffix' => '</div>',
+      '#group' => 'display',
+
     );
 
     $form['entity']['entityBundle'] = array(
@@ -134,9 +204,11 @@ class KeywordSettingsForm extends ConfigFormBase  {
 
     $entityType = $form_state->getValue('entityType');
     if ($entityType) {
-      $bundleType = $this->entityTypeManager->getDefinition($entityType)->getBundleEntityType();
+      $bundleType = $this->entityTypeManager->getDefinition($entityType)
+        ->getBundleEntityType();
       if ($bundleType) {
-        $bundles = $this->entityTypeManager->getStorage($bundleType)->loadMultiple();
+        $bundles = $this->entityTypeManager->getStorage($bundleType)
+          ->loadMultiple();
 
         if ($bundles) {
           foreach ($bundles as $bundle) {
@@ -153,18 +225,15 @@ class KeywordSettingsForm extends ConfigFormBase  {
       }
     }
 
-    return $form;
-  }
+    $form['actions']['addNew'] = array(
+      '#type' => 'submit',
+      '#value' => $this->t('Add'),
+      '#button_type' => 'primary',
+      '#submit' => ['::addDisplay'],
+      '#group' => 'display',
+    );
 
-  /**
-   * Fills forms.
-   *
-   * @param array $form
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   * @return mixed
-   */
-  public function populateEntitySettings(array &$form, FormStateInterface $form_state) {
-    return $form['entity'];
+    return $form;
   }
 
   /**
@@ -172,30 +241,40 @@ class KeywordSettingsForm extends ConfigFormBase  {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    * @return array
    */
-  protected function buildTable(array &$form, FormStateInterface $form_state) {
+  protected function buildTable(FormStateInterface $form_state) {
 
-    $form['mytable'] = array(
+    $form = [];
+
+
+    $form['display_table'] = array(
       '#type' => 'table',
-      '#header' => array(t('Entity type'), t('Entity bundle'), t('Display'), t('Operations')),
+      '#header' => array(
+        t('Entity type'),
+        t('Entity bundle'),
+        t('Display'),
+        t('Operations'),
+      ),
     );
 
-    $displays = $this->configFactory()->getEditable('alinks.settings')->get('displays');
+    $displays = $this->configFactory()
+      ->getEditable('alinks.settings')
+      ->get('displays');
 
     foreach ($displays as $key => $display) {
 
-      $form['mytable'][$key]['entity_type'] = array(
+      $form['display_table'][$key]['entity_type'] = array(
         '#plain_text' => $display['entity_type'],
       );
 
-      $form['mytable'][$key]['entity_bundle'] = array(
+      $form['display_table'][$key]['entity_bundle'] = array(
         '#plain_text' => $display['entity_bundle'],
       );
 
-      $form['mytable'][$key]['entity_display'] = array(
+      $form['display_table'][$key]['entity_display'] = array(
         '#plain_text' => $display['entity_display'],
       );
 
-      $form['mytable'][$key]['operations'] = array(
+      $form['display_table'][$key]['operations'] = array(
         '#type' => 'operations',
         '#links' => array(
           'delete' => array(

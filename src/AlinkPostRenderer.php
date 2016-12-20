@@ -5,6 +5,7 @@ namespace Drupal\alinks;
 use Drupal\alinks\Entity\Keyword;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Url;
+use Drupal\taxonomy\Entity\Term;
 use Wamania\Snowball\English;
 
 /**
@@ -64,6 +65,27 @@ class AlinkPostRenderer {
         ->condition('status', 1)
         ->execute();
       $this->keywords = Keyword::loadMultiple($ids);
+
+
+      $vocabularies = \Drupal::config('alinks.settings')->get('vocabularies');
+
+      if ($vocabularies) {
+        $terms = \Drupal::entityQuery('taxonomy_term')
+          ->condition('vid', $vocabularies, 'IN')
+          ->execute();
+
+        /** @var Term[] $terms */
+        $terms = Term::loadMultiple($terms);
+        foreach ($terms as $term) {
+          $this->keywords[] = Keyword::create([
+            'name' => $term->label(),
+            'link' => [
+              'uri' => 'internal:/' . $term->toUrl()->getInternalPath(),
+            ],
+          ]);
+        }
+      }
+
       foreach ($this->keywords as &$keyword) {
         $keyword->stemmed_keyword = $this->stemmer->stem($keyword->getText());
       }
